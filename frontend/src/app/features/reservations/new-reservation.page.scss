@@ -1,0 +1,203 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
+}
+
+.steps { display: grid; gap: 16px; }
+
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+
+  > div { flex: 1; }
+
+  .num {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--green-50);
+    color: var(--green-700);
+    box-shadow: inset 0 0 0 1px var(--green-100);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  h2 { font-size: 15px; }
+
+  .category-select { width: auto; min-width: 200px; }
+
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+    .category-select { width: 100%; }
+  }
+}
+
+.picker {
+  padding: 6px 18px 18px;
+  transition: opacity 0.15s;
+  &.loading { opacity: 0.5; pointer-events: none; }
+}
+
+.group { padding-top: 14px; }
+
+.group-title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+  span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+}
+
+.units {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 8px;
+}
+
+.unit {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+
+  .checkbox { margin-top: 2px; flex: none; }
+
+  &:hover:not(.taken) { border-color: var(--green-600); }
+
+  &.picked {
+    border-color: var(--green-600);
+    background: var(--green-50);
+    box-shadow: inset 0 0 0 1px var(--green-600);
+  }
+
+  &.taken {
+    cursor: not-allowed;
+    background: var(--surface-2);
+    .unit-name { color: var(--muted); }
+    .unit-note { color: var(--red-700); }
+  }
+}
+
+.unit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.unit-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.unit-note {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary {
+  position: sticky;
+  top: 20px;
+
+  .card-body { display: grid; gap: 16px; }
+}
+
+.summary-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-weight: 500;
+  app-icon { color: var(--green-700); margin-top: 1px; }
+}
+
+.summary-items {
+  display: grid;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+
+  .label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+}
+
+.picked-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .remove {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--faint);
+    cursor: pointer;
+    app-icon { width: 14px; height: 14px; }
+    &:hover { background: var(--red-50); color: var(--red-700); }
+  }
+}
+
+.submit { width: 100%; height: 42px; }
+
+/* ---------- Motion ---------- */
+
+.unit {
+  transition: border-color 0.15s, background 0.15s, transform 0.2s var(--ease-spring), box-shadow 0.15s;
+  &:hover:not(.taken) { transform: translateY(-1px); box-shadow: var(--shadow); }
+  &.picked { animation: picked 0.35s var(--ease-spring); }
+}
+
+.group {
+  animation: fade-up 0.4s var(--ease-out) backwards;
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) { animation-delay: #{$i * 0.04}s; }
+  }
+}
+
+.picked-item { animation: slide-in-right 0.3s var(--ease-out) backwards; }
+
+.step-head .num { transition: transform 0.25s var(--ease-spring); }
+.step:hover .step-head .num { transform: scale(1.12) rotate(-6deg); }
+
+.summary-row app-icon { animation: tick 2s ease-in-out infinite; }
+
+@keyframes picked {
+  40% { transform: scale(1.03); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+}
+
+@keyframes tick {
+  50% { transform: rotate(20deg); }
+}

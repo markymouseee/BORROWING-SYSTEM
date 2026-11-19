@@ -1,0 +1,17 @@
+# .NET
+bin/
+obj/
+*.user
+publish/
+backend/src/BorrowingSystem.Api/wwwroot/*
+!backend/src/BorrowingSystem.Api/wwwroot/.gitkeep
+
+# Node / Angular
+node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDE
+.vs/
+.idea/
+.claude

@@ -1,0 +1,94 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">{{ today }}</div>
+      <h1>{{ greeting }}, {{ auth.user()?.fullName }}</h1>
+      <p class="subtitle">
+        @if (auth.isAdmin()) {
+          Here is what needs the Property Office's attention.
+        } @else {
+          Here is where your equipment requests stand.
+        }
+      </p>
+    </div>
+    <div class="actions">
+      <a routerLink="/equipment" class="btn">
+        <app-icon name="box" /> Browse equipment
+      </a>
+      <a routerLink="/reservations/new" class="btn primary">
+        <app-icon name="plus" /> New reservation
+      </a>
+    </div>
+  </header>
+
+  <section class="stats">
+    @for (stat of stats(); track stat.label) {
+      <a class="stat" [class]="stat.tone" [routerLink]="stat.link" [queryParams]="stat.query">
+        <span class="stat-top">
+          <span class="label">{{ stat.label }}</span>
+          <span class="stat-icon"><app-icon [name]="stat.icon" /></span>
+        </span>
+        <span class="value" [appCountUp]="stat.value"></span>
+        <span class="go">View <app-icon name="arrowRight" /></span>
+      </a>
+    } @empty {
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="stat"><div class="skeleton" style="width: 60%"></div><div class="skeleton" style="width: 30%; height: 26px; margin-top: 10px"></div></div>
+      }
+    }
+  </section>
+
+  @if (data(); as d) {
+    <section class="inventory card">
+      <div class="inventory-head">
+        <span><strong [appCountUp]="d.totalEquipment"></strong> units in active inventory</span>
+        <span class="legend">
+          @for (m of meter(); track m.label) {
+            <span><i [class]="m.tone"></i>{{ m.label }} · {{ m.value }}</span>
+          }
+        </span>
+      </div>
+      <div class="meter" role="img" aria-label="Inventory by status">
+        @for (m of meter(); track m.label; let i = $index) {
+          <span [class]="m.tone" [style.width.%]="m.percent" [style.animation-delay]="0.25 + i * 0.12 + 's'"></span>
+        }
+      </div>
+    </section>
+  }
+
+  <section class="panels">
+    @for (panel of panels(); track panel.title) {
+      <div class="card panel" [class.danger]="panel.tone === 'red' && panel.entries.length > 0">
+        <div class="card-header">
+          <h2>
+            {{ panel.title }}
+            <span class="count">{{ panel.entries.length }}</span>
+          </h2>
+        </div>
+        @if (panel.entries.length === 0) {
+          <div class="empty small">{{ panel.empty }}</div>
+        } @else {
+          <ul class="entries">
+            @for (entry of panel.entries; track entry.reservationId) {
+              <li>
+                <a [routerLink]="['/reservations', entry.reservationId]">
+                  <div class="entry-main">
+                    <span class="entry-title">{{ entry.eventName }}</span>
+                    <span class="entry-meta">
+                      <span class="tag">{{ entry.departmentCode }}</span>
+                      {{ entry.requestedByName }} · {{ entry.itemCount }} {{ entry.itemCount === 1 ? 'item' : 'items' }}
+                    </span>
+                    <span class="entry-meta">{{ entry.startAt | schedule: entry.endAt }}</span>
+                  </div>
+                  <span class="when" [class.late]="panel.tone === 'red'">
+                    {{ relative(panel.time === 'start' ? entry.startAt : entry.endAt) }}
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </section>
+</div>

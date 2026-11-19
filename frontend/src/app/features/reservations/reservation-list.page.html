@@ -1,0 +1,92 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">Borrowing</div>
+      <h1>{{ auth.isAdmin() ? 'Reservations' : 'My reservations' }}</h1>
+      <p class="subtitle">
+        {{ auth.isAdmin() ? 'Approve requests, release equipment and record returns.' : 'Track your requests from approval to return.' }}
+      </p>
+    </div>
+    <div class="actions">
+      <a routerLink="/reservations/new" class="btn primary"><app-icon name="plus" /> New reservation</a>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="tabs" role="tablist">
+      @for (t of tabs; track t.key) {
+        <button type="button" role="tab" [class.active]="activeTab() === t.key" [attr.aria-selected]="activeTab() === t.key"
+                (click)="selectTab(t.key)">
+          {{ t.label }}
+        </button>
+      }
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <app-icon name="search" />
+        <input class="input" type="search" placeholder="Search event, borrower or department"
+               [ngModel]="search()" (ngModelChange)="onSearch($event)" />
+      </div>
+    </div>
+
+    <div class="table-wrap" [style.opacity]="loading() && result() ? 0.6 : 1">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Event</th>
+            <th>Department</th>
+            <th>Schedule</th>
+            <th>Items</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!result()) {
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <tr><td colspan="6"><div class="skeleton" style="width: 65%"></div></td></tr>
+            }
+          } @else {
+            @for (r of result()!.items; track r.id) {
+              <tr class="clickable" (click)="open(r.id)">
+                <td><span class="mono">{{ r.code }}</span></td>
+                <td>
+                  <div class="primary-text">{{ r.eventName }}</div>
+                  <div class="secondary-text">{{ r.requestedByName }}{{ r.venue ? ' · ' + r.venue : '' }}</div>
+                </td>
+                <td><span class="tag">{{ r.departmentCode }}</span></td>
+                <td class="nowrap">{{ r.startAt | schedule: r.endAt }}</td>
+                <td>
+                  <div class="primary-text">{{ r.assetTags.length }}</div>
+                  <div class="secondary-text">
+                    {{ r.assetTags.slice(0, 3).join(', ') }}{{ r.assetTags.length > 3 ? ' +' + (r.assetTags.length - 3) : '' }}
+                  </div>
+                </td>
+                <td><app-status-badge [reservation]="r.status" [overdue]="r.isOverdue" /></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="empty">
+                    <strong>No reservations here</strong>
+                    @if (search()) {
+                      Try a different search.
+                    } @else {
+                      Nothing in this list yet.
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (result(); as r) {
+      <app-pagination [page]="r.page" [pageSize]="r.pageSize" [totalCount]="r.totalCount" noun="reservations"
+                      (pageChange)="page.set($event)" />
+    }
+  </div>
+</div>

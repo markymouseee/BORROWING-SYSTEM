@@ -1,0 +1,175 @@
+<div class="page">
+  <a routerLink="/reservations" class="back-link"><app-icon name="chevronLeft" /> Reservations</a>
+
+  @if (reservation(); as r) {
+    <header class="page-header">
+      <div>
+        <div class="eyebrow mono">{{ r.code }}</div>
+        <h1>{{ r.eventName }}</h1>
+        <p class="subtitle">{{ r.departmentName }} · requested by {{ r.requestedByName }}</p>
+      </div>
+      <div class="actions">
+        @if (can().has('Cancel')) {
+          <button type="button" class="btn danger" [disabled]="busy()" (click)="cancel()">Cancel reservation</button>
+        }
+        @if (can().has('Reject')) {
+          <button type="button" class="btn danger" [disabled]="busy()" (click)="openReject()">Reject</button>
+        }
+        @if (can().has('Approve')) {
+          <button type="button" class="btn primary" [disabled]="busy()" (click)="approve()">
+            <app-icon name="check" /> Approve
+          </button>
+        }
+        @if (can().has('Release')) {
+          <button type="button" class="btn primary" [disabled]="busy()" (click)="release()">
+            <app-icon name="send" /> Release equipment
+          </button>
+        }
+        @if (can().has('Receive')) {
+          <button type="button" class="btn primary" [disabled]="busy()" (click)="openReceive()">
+            <app-icon name="undo" /> Record return
+          </button>
+        }
+      </div>
+    </header>
+
+    @if (r.isOverdue) {
+      <div class="alert error banner">
+        <app-icon name="alert" />
+        <span>This equipment was due back {{ r.endAt | when }} and has not been returned.</span>
+      </div>
+    }
+
+    <div class="layout">
+      <div class="stack">
+        <div class="card">
+          <div class="card-header"><h2>Details</h2><app-status-badge [reservation]="r.status" [overdue]="r.isOverdue" /></div>
+          <dl class="details card-body">
+            <div><dt>Schedule</dt><dd>{{ r.startAt | schedule: r.endAt }}</dd></div>
+            <div><dt>Venue</dt><dd>{{ r.venue || '—' }}</dd></div>
+            <div><dt>Department</dt><dd>{{ r.departmentName }} <span class="tag">{{ r.departmentCode }}</span></dd></div>
+            <div><dt>Requested by</dt><dd>{{ r.requestedByName }}</dd></div>
+            @if (r.purpose) {
+              <div class="full"><dt>Notes</dt><dd class="pre">{{ r.purpose }}</dd></div>
+            }
+          </dl>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>Equipment <span class="count">{{ r.items.length }}</span></h2></div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th>Asset tag</th>
+                  <th>Equipment</th>
+                  <th>Category</th>
+                  @if (r.status === 'Returned') {
+                    <th>Returned as</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of r.items; track item.equipmentId) {
+                  <tr>
+                    <td><a [routerLink]="['/equipment', item.equipmentId]" class="tag">{{ item.assetTag }}</a></td>
+                    <td class="primary-text">{{ item.name }}</td>
+                    <td>{{ item.category }}</td>
+                    @if (r.status === 'Returned') {
+                      <td>
+                        <span class="badge" [class.green]="item.returnCondition === 'Good'"
+                              [class.red]="item.returnCondition !== 'Good'">
+                          {{ conditionLabel[item.returnCondition ?? 'Good'] }}
+                        </span>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card">
+        <div class="card-header"><h2>Progress</h2></div>
+        <ol class="timeline card-body">
+          @for (step of timeline(); track step.label) {
+            <li [class]="step.state">
+              <span class="dot">
+                @if (step.state === 'done') {
+                  <app-icon name="check" />
+                } @else if (step.state === 'stopped') {
+                  <app-icon name="x" />
+                }
+              </span>
+              <div>
+                <div class="step-label">{{ step.label }}</div>
+                @if (step.who || step.when) {
+                  <div class="step-meta">{{ step.who }}{{ step.who && step.when ? ' · ' : '' }}{{ step.when | when }}</div>
+                }
+                @if (step.note) {
+                  <div class="step-note">“{{ step.note }}”</div>
+                }
+              </div>
+            </li>
+          }
+        </ol>
+      </aside>
+    </div>
+
+    <!-- Reject -->
+    <app-modal title="Reject this request?" subtitle="The requester will see your reason."
+               [open]="dialog() === 'reject'" (closed)="dialog.set(null)">
+      <div class="modal-body">
+        <div class="field">
+          <label for="reason">Reason</label>
+          <textarea id="reason" class="input" [(ngModel)]="rejectReason" maxlength="300"
+                    placeholder="e.g. Projector is reserved for the board exam review that day."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" (click)="dialog.set(null)">Keep request</button>
+        <button type="button" class="btn danger-solid" [disabled]="busy() || !rejectReason.trim()" (click)="confirmReject()">
+          Reject request
+        </button>
+      </div>
+    </app-modal>
+
+    <!-- Receive -->
+    <app-modal title="Record return" subtitle="Check each unit. Damaged or missing items are taken out of circulation."
+               [wide]="true" [open]="dialog() === 'receive'" (closed)="dialog.set(null)">
+      <div class="modal-body">
+        <div class="return-list">
+          @for (item of r.items; track item.equipmentId) {
+            <div class="return-row">
+              <div>
+                <div class="primary-text">{{ item.name }}</div>
+                <span class="tag">{{ item.assetTag }}</span>
+              </div>
+              <div class="segmented" role="radiogroup" [attr.aria-label]="'Condition of ' + item.assetTag">
+                @for (c of ['Good', 'Damaged', 'Missing']; track c) {
+                  <button type="button" [class.on]="returnConditions[item.equipmentId] === c" [attr.data-tone]="c"
+                          (click)="returnConditions[item.equipmentId] = $any(c)">
+                    {{ c }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        <div class="field" style="margin-top: 16px">
+          <label for="remarks">Remarks <span class="muted">(optional)</span></label>
+          <textarea id="remarks" class="input" [(ngModel)]="returnRemarks" maxlength="500"
+                    placeholder="e.g. Mic windscreen missing; cable returned separately."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" (click)="dialog.set(null)">Cancel</button>
+        <button type="button" class="btn primary" [disabled]="busy()" (click)="confirmReceive()">Confirm return</button>
+      </div>
+    </app-modal>
+  } @else {
+    <div class="card card-body"><div class="skeleton" style="width: 40%"></div></div>
+  }
+</div>

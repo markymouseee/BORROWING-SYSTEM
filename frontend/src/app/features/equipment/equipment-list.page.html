@@ -1,0 +1,123 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">Inventory</div>
+      <h1>Equipment</h1>
+      <p class="subtitle">Every tagged unit the school lends out, with its live status.</p>
+    </div>
+    <div class="actions">
+      @if (auth.isAdmin()) {
+        <button type="button" class="btn primary" (click)="add()">
+          <app-icon name="plus" /> Add equipment
+        </button>
+      } @else {
+        <a routerLink="/reservations/new" class="btn primary">
+          <app-icon name="calendarPlus" /> Reserve equipment
+        </a>
+      }
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="search">
+        <app-icon name="search" />
+        <input class="input" type="search" placeholder="Search tag, name or category"
+               [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
+      <select class="input" [ngModel]="category()" (ngModelChange)="category.set($event)" aria-label="Category">
+        <option value="">All categories</option>
+        @for (c of categories(); track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+      <select class="input" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" aria-label="Status">
+        <option value="">Any status</option>
+        @for (s of statusOptions; track s.value) {
+          <option [value]="s.value">{{ s.label }}</option>
+        }
+      </select>
+      <span class="spacer"></span>
+      @if (all()) {
+        <span class="muted small">{{ filtered().length }} of {{ all()!.length }} units</span>
+      }
+    </div>
+
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Asset tag</th>
+            <th>Equipment</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Current / next use</th>
+            @if (auth.isAdmin()) {
+              <th></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @if (all() === null) {
+            @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+              <tr>
+                <td colspan="6"><div class="skeleton" style="width: 70%"></div></td>
+              </tr>
+            }
+          } @else {
+            @for (e of pageRows(); track e.id) {
+              <tr class="clickable" (click)="open(e)">
+                <td><span class="tag">{{ e.assetTag }}</span></td>
+                <td>
+                  <div class="primary-text">{{ e.name }}</div>
+                  @if (e.description) {
+                    <div class="secondary-text">{{ e.description }}</div>
+                  }
+                </td>
+                <td>{{ e.category }}</td>
+                <td><app-status-badge [equipment]="e.status" /></td>
+                <td>
+                  @if (e.currentBooking; as b) {
+                    <div class="primary-text">{{ b.departmentCode }} · {{ b.eventName }}</div>
+                    <div class="secondary-text">{{ b.startAt | schedule: b.endAt }}</div>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                @if (auth.isAdmin()) {
+                  <td class="actions-cell">
+                    <button type="button" class="btn ghost sm" (click)="edit(e, $event)">
+                      <app-icon name="edit" /> Edit
+                    </button>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="empty">
+                    <strong>No equipment matches these filters</strong>
+                    <button type="button" class="btn sm" style="margin-top: 10px" (click)="clearFilters()">
+                      Clear filters
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="filtered().length" noun="units"
+                    (pageChange)="page.set($event)" />
+  </div>
+</div>
+
+<app-equipment-form-dialog
+  [open]="dialogOpen()"
+  [equipment]="editing()"
+  [categories]="categories()"
+  (closed)="dialogOpen.set(false)"
+  (saved)="onSaved($event)"
+/>

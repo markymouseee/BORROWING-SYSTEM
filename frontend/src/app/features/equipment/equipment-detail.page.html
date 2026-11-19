@@ -1,0 +1,115 @@
+<div class="page">
+  <a routerLink="/equipment" class="back-link"><app-icon name="chevronLeft" /> Equipment</a>
+
+  @if (detail(); as d) {
+    <header class="page-header">
+      <div>
+        <div class="eyebrow">{{ d.equipment.category }}</div>
+        <h1>{{ d.equipment.name }} <span class="tag" style="vertical-align: middle; margin-left: 6px">{{ d.equipment.assetTag }}</span></h1>
+      </div>
+      <div class="actions">
+        @if (auth.isAdmin()) {
+          <button type="button" class="btn" (click)="dialogOpen.set(true)"><app-icon name="edit" /> Edit</button>
+        }
+        @if (d.equipment.status !== 'Retired' && d.equipment.condition === 'Good') {
+          <a routerLink="/reservations/new" [queryParams]="{ equipment: d.equipment.id }" class="btn primary">
+            <app-icon name="calendarPlus" /> Reserve this
+          </a>
+        }
+      </div>
+    </header>
+
+    <div class="layout">
+      <div class="card card-body">
+        <dl>
+          <div>
+            <dt>Status</dt>
+            <dd><app-status-badge [equipment]="d.equipment.status" /></dd>
+          </div>
+          <div>
+            <dt>Condition</dt>
+            <dd>{{ conditionLabel[d.equipment.condition] }}</dd>
+          </div>
+          <div>
+            <dt>Description</dt>
+            <dd>{{ d.equipment.description || '—' }}</dd>
+          </div>
+          @if (d.equipment.currentBooking; as b) {
+            <div>
+              <dt>{{ b.status === 'Borrowed' ? 'Currently with' : 'Next booking' }}</dt>
+              <dd>
+                <a [routerLink]="['/reservations', b.reservationId]">{{ b.departmentCode }} · {{ b.eventName }}</a>
+                <div class="muted small">{{ b.startAt | schedule: b.endAt }}</div>
+              </dd>
+            </div>
+          }
+        </dl>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="card-header">
+            <h2>Upcoming bookings <span class="count">{{ d.upcoming.length }}</span></h2>
+            <span class="muted small">Next 60 days</span>
+          </div>
+          @if (d.upcoming.length === 0) {
+            <div class="empty small">Free for the next 60 days.</div>
+          } @else {
+            <div class="table-wrap">
+              <table class="data">
+                <thead><tr><th>Schedule</th><th>Event</th><th>Dept.</th><th>Status</th></tr></thead>
+                <tbody>
+                  @for (b of d.upcoming; track b.reservationId) {
+                    <tr>
+                      <td class="nowrap">{{ b.startAt | schedule: b.endAt }}</td>
+                      <td>
+                        @if (auth.isAdmin()) {
+                          <a [routerLink]="['/reservations', b.reservationId]">{{ b.eventName }}</a>
+                        } @else {
+                          {{ b.eventName }}
+                        }
+                      </td>
+                      <td><span class="tag">{{ b.departmentCode }}</span></td>
+                      <td><app-status-badge [reservation]="b.status" /></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>Borrowing history</h2><span class="muted small">Last 10 returns</span></div>
+          @if (d.history.length === 0) {
+            <div class="empty small">Not borrowed yet.</div>
+          } @else {
+            <div class="table-wrap">
+              <table class="data">
+                <thead><tr><th>Schedule</th><th>Event</th><th>Dept.</th></tr></thead>
+                <tbody>
+                  @for (b of d.history; track b.reservationId) {
+                    <tr>
+                      <td class="nowrap">{{ b.startAt | schedule: b.endAt }}</td>
+                      <td>{{ b.eventName }}</td>
+                      <td><span class="tag">{{ b.departmentCode }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <app-equipment-form-dialog
+      [open]="dialogOpen()"
+      [equipment]="d.equipment"
+      (closed)="dialogOpen.set(false)"
+      (saved)="onSaved($event)"
+    />
+  } @else {
+    <div class="card card-body"><div class="skeleton" style="width: 40%"></div></div>
+  }
+</div>

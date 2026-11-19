@@ -1,0 +1,133 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">Administration</div>
+      <h1>Users</h1>
+      <p class="subtitle">Faculty who can reserve, and custodians who approve and release.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary" (click)="openEdit(null)"><app-icon name="plus" /> Add user</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="search">
+        <app-icon name="search" />
+        <input class="input" type="search" placeholder="Search name, email or department"
+               [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>Name</th><th>Role</th><th>Department</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (u of pageRows(); track u.id) {
+            <tr>
+              <td>
+                <div class="primary-text">{{ u.fullName }}</div>
+                <div class="secondary-text">{{ u.email }}</div>
+              </td>
+              <td>{{ u.role === 'Admin' ? 'Custodian (admin)' : 'Faculty' }}</td>
+              <td>{{ u.departmentName || '—' }}</td>
+              <td>
+                <span class="badge" [class.green]="u.isActive" [class.gray]="!u.isActive">
+                  {{ u.isActive ? 'Active' : 'Disabled' }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <button type="button" class="btn ghost sm" (click)="openPassword(u)"><app-icon name="key" /> Reset password</button>
+                <button type="button" class="btn ghost sm" (click)="openEdit(u)"><app-icon name="edit" /> Edit</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5"><div class="empty">{{ users() ? 'No users match.' : 'Loading…' }}</div></td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pagination [page]="page()" [pageSize]="pageSize" [totalCount]="filtered().length" noun="users"
+                    (pageChange)="page.set($event)" />
+  </div>
+</div>
+
+<app-modal [title]="editing() ? 'Edit user' : 'Add user'" [open]="dialog() === 'edit'" (closed)="dialog.set(null)">
+  <form (ngSubmit)="save()">
+    <div class="modal-body">
+      @if (error()) {
+        <div class="alert error" style="margin-bottom: 14px">{{ error() }}</div>
+      }
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="u-name">Full name</label>
+          <input id="u-name" class="input" name="fullName" [(ngModel)]="form.fullName" maxlength="120" />
+        </div>
+        <div class="field span-2">
+          <label for="u-email">School email</label>
+          <input id="u-email" class="input" type="email" name="email" [(ngModel)]="form.email" maxlength="160" />
+        </div>
+        <div class="field">
+          <label for="u-role">Role</label>
+          <select id="u-role" class="input" name="role" [(ngModel)]="form.role"
+                  [disabled]="editing()?.id === auth.user()?.id">
+            <option value="Faculty">Faculty</option>
+            <option value="Admin">Custodian (admin)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="u-dept">Department</label>
+          <select id="u-dept" class="input" name="departmentId" [(ngModel)]="form.departmentId">
+            <option [ngValue]="null">{{ form.role === 'Admin' ? 'None' : 'Select…' }}</option>
+            @for (d of departments(); track d.id) {
+              <option [ngValue]="d.id">{{ d.name }}</option>
+            }
+          </select>
+        </div>
+        @if (editing()) {
+          <div class="field">
+            <label for="u-active">Account</label>
+            <select id="u-active" class="input" name="isActive" [(ngModel)]="form.isActive"
+                    [disabled]="editing()?.id === auth.user()?.id">
+              <option [ngValue]="true">Active</option>
+              <option [ngValue]="false">Disabled</option>
+            </select>
+          </div>
+        } @else {
+          <div class="field span-2">
+            <label for="u-pw">Initial password</label>
+            <input id="u-pw" class="input" type="password" name="password" autocomplete="new-password"
+                   [(ngModel)]="form.password" />
+            <span class="hint">At least 8 characters. They can change it after signing in.</span>
+          </div>
+        }
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" (click)="dialog.set(null)">Cancel</button>
+      <button type="submit" class="btn primary" [disabled]="saving()">Save</button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal title="Reset password" [subtitle]="'Set a new password for ' + (editing()?.fullName ?? '') + '.'"
+           [open]="dialog() === 'password'" (closed)="dialog.set(null)">
+  <form (ngSubmit)="resetPassword()">
+    <div class="modal-body" style="display: grid; gap: 14px">
+      @if (error()) {
+        <div class="alert error">{{ error() }}</div>
+      }
+      <div class="field">
+        <label for="u-newpw">New password</label>
+        <input id="u-newpw" class="input" type="password" name="newPassword" autocomplete="new-password"
+               [(ngModel)]="newPassword" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" (click)="dialog.set(null)">Cancel</button>
+      <button type="submit" class="btn primary" [disabled]="saving()">Reset password</button>
+    </div>
+  </form>
+</app-modal>

@@ -1,0 +1,162 @@
+<div class="shell" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen()">
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <img class="sidebar-watermark" src="lcc-logo.png" alt="" aria-hidden="true" />
+      <!-- Brand -->
+      <div class="brand-row">
+        <a routerLink="/" class="brand" title="Legacy College of Compostela">
+          <span class="seal"><span class="ring"></span><img src="lcc-logo.png" alt="" /></span>
+          <span class="brand-text">
+            <strong>Legacy College of Compostela, Inc.</strong>
+            <small>Equipment Borrowing</small>
+          </span>
+        </a>
+      </div>
+
+      <!-- Primary action -->
+      <!-- <a routerLink="/reservations/new" class="reserve" title="Reserve equipment">
+        <app-icon name="calendarPlus" />
+        <span class="label">Reserve equipment</span>
+      </a> -->
+
+      <!-- Navigation -->
+      <nav #nav>
+        @if (indicator(); as ind) {
+          <span class="indicator" [style.top.px]="ind.top" [style.height.px]="ind.height"></span>
+        }
+        @for (section of sections(); track section.title) {
+          <div class="nav-section">
+            <div class="nav-title"><span>{{ section.title }}</span></div>
+            @for (item of section.items; track item.path) {
+              <a #link class="nav-link" [routerLink]="item.path" routerLinkActive="active"
+                 [routerLinkActiveOptions]="{ exact: !!item.exact }" [attr.title]="collapsed() ? item.label : null"
+                 (isActiveChange)="onActiveChange($event, link)">
+                <span class="nav-icon"><app-icon [name]="item.icon" /></span>
+                <span class="label">{{ item.label }}</span>
+                @if (item.badges) {
+                  <span class="badges">
+                    @if (item.badges.includes('overdue') && badges().overdue > 0) {
+                      <span class="count red" title="Overdue">{{ badges().overdue }}</span>
+                    }
+                    @if (item.badges.includes('pending') && badges().pending > 0) {
+                      <span class="count" title="Pending approval">{{ badges().pending }}</span>
+                    }
+                  </span>
+                }
+              </a>
+            }
+          </div>
+        }
+      </nav>
+
+      <!-- Collapse -->
+      <!-- <button type="button" class="collapse-btn" (click)="toggleCollapsed()"
+              [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+              [attr.title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+        <app-icon [name]="collapsed() ? 'chevronRight' : 'chevronLeft'" />
+        <span class="label">Collapse</span>
+      </button> -->
+
+    </div>
+  </aside>
+
+  <div class="scrim" (click)="mobileOpen.set(false)"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="icon-btn menu-btn" (click)="mobileOpen.set(true)" aria-label="Open menu">
+        <app-icon name="menu" />
+      </button>
+
+      <div class="crumbs">
+        @if (crumb().section) {
+          <span class="crumb-section">{{ crumb().section }}</span>
+          <app-icon class="crumb-sep" name="chevronRight" />
+        }
+        <span class="crumb-page">{{ crumb().page }}</span>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="theme-switch" role="radiogroup" aria-label="Theme">
+          @for (opt of themeOptions; track opt.mode) {
+            <button type="button" role="radio" [class.on]="theme.mode() === opt.mode"
+                    [attr.aria-checked]="theme.mode() === opt.mode" [attr.title]="opt.label + ' theme'"
+                    (click)="theme.set(opt.mode)">
+              <app-icon [name]="opt.icon" />
+            </button>
+          }
+        </div>
+
+        <span class="divider" aria-hidden="true"></span>
+
+        <div class="profile">
+          <button type="button" class="profile-btn" (click)="accountMenuOpen.set(!accountMenuOpen())"
+                  [attr.aria-expanded]="accountMenuOpen()" aria-haspopup="menu">
+            <span class="avatar">{{ initials() }}</span>
+            <span class="who">
+              <strong>{{ auth.user()?.fullName }}</strong>
+              <small>{{ roleLabel() }}</small>
+            </span>
+            <app-icon class="chev" name="chevronDown" />
+          </button>
+
+          @if (accountMenuOpen()) {
+            <div class="profile-menu" role="menu">
+              <div class="menu-head">
+                <span class="avatar lg">{{ initials() }}</span>
+                <span>
+                  <strong>{{ auth.user()?.fullName }}</strong>
+                  <small>{{ auth.user()?.email }}</small>
+                </span>
+              </div>
+              <button type="button" role="menuitem" (click)="openPasswordDialog()">
+                <app-icon name="key" /> Change password
+              </button>
+              <button type="button" role="menuitem" class="danger" (click)="signOut()">
+                <app-icon name="logout" /> Sign out
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<app-modal
+  title="Change password"
+  subtitle="Use at least 8 characters."
+  [open]="passwordOpen()"
+  (closed)="passwordOpen.set(false)"
+>
+  <form (ngSubmit)="changePassword()">
+    <div class="modal-body" style="display: grid; gap: 14px">
+      @if (passwordError()) {
+        <div class="alert error">{{ passwordError() }}</div>
+      }
+      <div class="field">
+        <label for="pw-current">Current password</label>
+        <input id="pw-current" class="input" type="password" name="current" autocomplete="current-password"
+               [(ngModel)]="passwordForm.current" required />
+      </div>
+      <div class="field">
+        <label for="pw-new">New password</label>
+        <input id="pw-new" class="input" type="password" name="next" autocomplete="new-password"
+               [(ngModel)]="passwordForm.next" required />
+      </div>
+      <div class="field">
+        <label for="pw-confirm">Confirm new password</label>
+        <input id="pw-confirm" class="input" type="password" name="confirm" autocomplete="new-password"
+               [(ngModel)]="passwordForm.confirm" required />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" (click)="passwordOpen.set(false)">Cancel</button>
+      <button type="submit" class="btn primary" [disabled]="savingPassword()">Update password</button>
+    </div>
+  </form>
+</app-modal>

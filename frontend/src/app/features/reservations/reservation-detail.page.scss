@@ -1,0 +1,153 @@
+.banner {
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
+}
+
+.stack { display: grid; gap: 16px; }
+
+.details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+
+  .full { grid-column: 1 / -1; }
+  dt { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 2px; }
+  dd { margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pre { white-space: pre-line; }
+
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+
+  li {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    padding-bottom: 22px;
+
+    &:last-child { padding-bottom: 0; }
+
+    // connector line
+    &:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 26px;
+      bottom: 2px;
+      width: 2px;
+      background: var(--line);
+    }
+    &.done:not(:last-child)::before { background: var(--green-600); }
+  }
+
+  .dot {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: 50%;
+    border: 2px solid var(--line-strong);
+    background: var(--surface);
+    color: #fff;
+    app-icon { width: 13px; height: 13px; }
+  }
+
+  .done .dot { background: var(--green-600); border-color: var(--green-600); }
+  .current .dot { border-color: var(--amber-500); box-shadow: 0 0 0 4px var(--amber-50); }
+  .stopped .dot { background: var(--red-700); border-color: var(--red-700); }
+
+  .step-label { font-weight: 600; line-height: 24px; }
+  .upcoming .step-label { color: var(--faint); font-weight: 500; }
+  .stopped .step-label { color: var(--red-700); }
+  .step-meta { font-size: 12.5px; color: var(--muted); }
+  .step-note { font-size: 13px; color: var(--ink-2); margin-top: 4px; font-style: italic; }
+}
+
+.return-list {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.return-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  & + & { border-top: 1px solid var(--line); }
+
+  @media (max-width: 520px) { flex-direction: column; align-items: flex-start; }
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--bg);
+  border: 1px solid var(--line);
+
+  button {
+    height: 28px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+
+    &.on { background: var(--surface); box-shadow: var(--shadow); color: var(--ink); }
+    &.on[data-tone='Good'] { color: var(--green-700); }
+    &.on[data-tone='Damaged'],
+    &.on[data-tone='Missing'] { color: var(--red-700); }
+  }
+}
+
+/* ---------- Motion: the timeline draws itself ---------- */
+
+.timeline li {
+  animation: fade-up 0.4s var(--ease-out) backwards;
+
+  &:not(:last-child)::before {
+    transform-origin: top;
+    animation: grow-y 0.4s var(--ease-out) backwards;
+  }
+
+  // Delays come after the shorthands above so they are not reset.
+  @for $i from 1 through 5 {
+    &:nth-child(#{$i}) { animation-delay: #{0.15 + $i * 0.12}s; }
+    &:nth-child(#{$i}):not(:last-child)::before { animation-delay: #{0.3 + $i * 0.12}s; }
+  }
+}
+
+.timeline .done .dot app-icon { animation: pop-in 0.3s 0.5s var(--ease-spring) backwards; }
+.timeline .current .dot { animation: beacon 1.8s ease-out infinite; }
+
+.return-row { transition: background 0.15s; &:hover { background: var(--surface-2); } }
+.segmented button { transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
+
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+}
+
+@keyframes beacon {
+  0% { box-shadow: 0 0 0 0 rgb(232 155 22 / 0.5); }
+  80%, 100% { box-shadow: 0 0 0 8px rgb(232 155 22 / 0); }
+}

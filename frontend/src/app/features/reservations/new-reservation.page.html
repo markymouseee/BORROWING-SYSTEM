@@ -1,0 +1,182 @@
+<div class="page">
+  <a routerLink="/reservations" class="back-link"><app-icon name="chevronLeft" /> Reservations</a>
+
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">New reservation</div>
+      <h1>Reserve equipment for an event</h1>
+      <p class="subtitle">
+        Pick the time first — the list shows only what is free for that window.
+        @if (!auth.isAdmin()) {
+          Requests are approved by the Property Office.
+        }
+      </p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="steps">
+      <!-- Step 1 -->
+      <section class="card step">
+        <div class="step-head">
+          <span class="num">1</span>
+          <div>
+            <h2>When do you need it?</h2>
+            <p class="muted small">Include time to set up and pack away.</p>
+          </div>
+        </div>
+        <div class="card-body form-grid">
+          <div class="field">
+            <label for="start">Pick-up</label>
+            <input id="start" class="input" type="datetime-local" [ngModel]="start()" (ngModelChange)="start.set($event)" />
+          </div>
+          <div class="field">
+            <label for="end">Return</label>
+            <input id="end" class="input" type="datetime-local" [ngModel]="end()" (ngModelChange)="end.set($event)" />
+          </div>
+          @if (period().error; as periodError) {
+            <div class="span-2 alert warn">{{ periodError }}</div>
+          }
+        </div>
+      </section>
+
+      <!-- Step 2 -->
+      <section class="card step">
+        <div class="step-head">
+          <span class="num">2</span>
+          <div>
+            <h2>What do you need?</h2>
+            <p class="muted small">Booked items are greyed out with who has them.</p>
+          </div>
+          <select class="input category-select" [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)"
+                  aria-label="Filter by category">
+            <option value="">All categories</option>
+            @for (g of groups(); track g.category) {
+              <option [value]="g.category">{{ g.category }} ({{ g.freeCount }} free)</option>
+            }
+          </select>
+        </div>
+
+        <div class="picker" [class.loading]="loading()">
+          @for (group of visibleGroups(); track group.category) {
+            <div class="group">
+              <div class="group-title">
+                {{ group.category }}
+                <span class="muted">{{ group.freeCount }} of {{ group.units.length }} free</span>
+              </div>
+              <div class="units">
+                @for (unit of group.units; track unit.equipment.id) {
+                  <label class="unit" [class.taken]="!unit.isAvailable" [class.picked]="selected().has(unit.equipment.id)">
+                    <input type="checkbox" class="checkbox"
+                           [checked]="selected().has(unit.equipment.id)"
+                           [disabled]="!unit.isAvailable"
+                           (change)="toggle(unit)" />
+                    <span class="unit-text">
+                      <span class="unit-name">{{ unit.equipment.name }} <span class="tag">{{ unit.equipment.assetTag }}</span></span>
+                      @if (unit.conflict; as c) {
+                        <span class="unit-note">Booked · {{ c.departmentCode }} – {{ c.eventName }}</span>
+                      } @else if (unit.equipment.description) {
+                        <span class="unit-note">{{ unit.equipment.description }}</span>
+                      }
+                    </span>
+                  </label>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="empty">
+              @if (period().error) {
+                Set a valid time above to see what is available.
+              } @else if (loading()) {
+                Checking the schedule…
+              } @else {
+                <strong>No equipment in inventory yet</strong>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Step 3 -->
+      <section class="card step">
+        <div class="step-head">
+          <span class="num">3</span>
+          <div>
+            <h2>What is it for?</h2>
+            <p class="muted small">Helps the custodian prepare and settle clashes.</p>
+          </div>
+        </div>
+        <div class="card-body form-grid">
+          <div class="field span-2">
+            <label for="event">Event or activity</label>
+            <input id="event" class="input" [(ngModel)]="eventName" maxlength="150"
+                   placeholder="e.g. Foundation Day program" />
+          </div>
+          <div class="field">
+            <label for="venue">Venue <span class="muted">(optional)</span></label>
+            <input id="venue" class="input" [(ngModel)]="venue" maxlength="120" placeholder="e.g. Gymnasium" />
+          </div>
+          @if (auth.isAdmin()) {
+            <div class="field">
+              <label for="dept">Borrowing department</label>
+              <select id="dept" class="input" [(ngModel)]="departmentId">
+                <option [ngValue]="null" disabled>Select…</option>
+                @for (d of departments(); track d.id) {
+                  <option [ngValue]="d.id">{{ d.name }}</option>
+                }
+              </select>
+            </div>
+          } @else {
+            <div class="field">
+              <span class="label">Department</span>
+              <input class="input" [value]="auth.user()?.departmentName" disabled />
+            </div>
+          }
+          <div class="field span-2">
+            <label for="purpose">Notes for the custodian <span class="muted">(optional)</span></label>
+            <textarea id="purpose" class="input" [(ngModel)]="purpose" maxlength="500"
+                      placeholder="Set-up time, who will pick up, special requests…"></textarea>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Summary -->
+    <aside class="card summary">
+      <div class="card-header"><h2>Your request</h2></div>
+      <div class="card-body">
+        <div class="summary-row">
+          <app-icon name="clock" />
+          @if (period().start) {
+            <span>{{ period().start | schedule: period().end }}</span>
+          } @else {
+            <span class="muted">No time set</span>
+          }
+        </div>
+
+        <div class="summary-items">
+          <div class="label">{{ selectedUnits().length }} {{ selectedUnits().length === 1 ? 'item' : 'items' }}</div>
+          @for (a of selectedUnits(); track a.equipment.id) {
+            <div class="picked-item">
+              <span class="tag">{{ a.equipment.assetTag }}</span>
+              <span class="name">{{ a.equipment.name }}</span>
+              <button type="button" class="remove" (click)="remove(a.equipment.id)" aria-label="Remove">
+                <app-icon name="x" />
+              </button>
+            </div>
+          } @empty {
+            <p class="muted small">Nothing picked yet.</p>
+          }
+        </div>
+
+        @if (error()) {
+          <div class="alert error">{{ error() }}</div>
+        }
+
+        <button type="button" class="btn primary submit" [disabled]="submitting()" (click)="submit()">
+          {{ submitting() ? 'Sending…' : auth.isAdmin() ? 'Book equipment' : 'Send request' }}
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>

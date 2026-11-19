@@ -1,0 +1,77 @@
+<div class="login">
+  <div class="backdrop" aria-hidden="true">
+    <span class="aurora a1"></span>
+    <span class="aurora a2"></span>
+    <span class="grid"></span>
+    <img class="watermark" src="lcc-logo.png" alt="" />
+  </div>
+
+  <main class="card">
+    <header class="heading">
+      <div class="seal">
+        <img src="lcc-logo.png" alt="Legacy College of Compostela seal" />
+      </div>
+      <span class="chip"><span class="dot"></span> Equipment Borrowing System</span>
+      <h1>Welcome back</h1>
+      <p>Legacy College of Compostela</p>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (isLocked()) {
+        <div class="lockout" role="alert" aria-live="polite">
+          <app-icon name="lock" />
+          <span>Too many failed attempts. Try again in <b class="timer">{{ countdown() }}</b>.</span>
+          <span class="lock-bar"><span [style.width.%]="lockProgress()"></span></span>
+        </div>
+      } @else if (error()) {
+        <div class="alert error login-error" role="alert">
+          <app-icon name="alert" />
+          <span>
+            {{ error() }}
+            @if (attemptsRemaining() !== null && attemptsRemaining()! <= 3) {
+              <b>{{ attemptsRemaining() }} {{ attemptsRemaining() === 1 ? 'attempt' : 'attempts' }} left.</b>
+            }
+          </span>
+        </div>
+      }
+
+      <!-- Floating-label fields: the label sits inside the box and lifts when you type. -->
+      <div class="float" [class.invalid]="form.controls.email.touched && form.controls.email.invalid">
+        <app-icon name="mail" />
+        <input id="email" type="email" formControlName="email" autocomplete="username" placeholder=" " />
+        <label for="email">School email</label>
+      </div>
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+        <span class="field-error">Enter a valid email address.</span>
+      }
+
+      <div class="float" [class.invalid]="form.controls.password.touched && form.controls.password.invalid">
+        <app-icon name="lock" />
+        <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+               autocomplete="current-password" placeholder=" " />
+        <label for="password">Password</label>
+        <button type="button" class="reveal-btn" (click)="showPassword.set(!showPassword())"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+          <app-icon [name]="showPassword() ? 'eyeOff' : 'eye'" />
+        </button>
+      </div>
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+        <span class="field-error">Enter your password.</span>
+      }
+
+      <button type="submit" class="btn primary submit" [disabled]="submitting() || isLocked()">
+        @if (submitting()) {
+          <span class="spinner"></span> Signing in…
+        } @else if (isLocked()) {
+          <app-icon name="clock" /> Try again in {{ countdown() }}
+        } @else {
+          Sign in <app-icon class="arrow" name="arrowRight" />
+        }
+      </button>
+    </form>
+
+    <p class="help">Forgot your password? Ask the Property Office to reset it.</p>
+  </main>
+
+  <footer class="foot">© {{ year }} Legacy College of Compostela · Compostela, Davao de Oro</footer>
+</div>
