@@ -29,14 +29,14 @@ public static class DatabaseInitializer
             var adminPassword = config["Seed:AdminPassword"]
                 ?? throw new InvalidOperationException("Seed:AdminPassword must be configured for the first run.");
 
-            var admin = new User("Property Custodian", "admin@lcc.edu.ph", UserRole.Admin, departmentId: null);
+            var admin = new User("Property Custodian", "admin@legacycollege.edu.ph", UserRole.Admin, departmentId: null);
             admin.SetPasswordHash(hasher.HashPassword(admin, adminPassword));
             db.Users.Add(admin);
 
             if (app.Environment.IsDevelopment() && config["Seed:FacultyPassword"] is { } facultyPassword)
             {
                 var deptId = await db.Departments.OrderBy(d => d.Id).Select(d => d.Id).FirstAsync();
-                var faculty = new User("Sample Faculty", "faculty@lcc.edu.ph", UserRole.Faculty, deptId);
+                var faculty = new User("Sample Faculty", "faculty@legacycollege.edu.ph", UserRole.Faculty, deptId);
                 faculty.SetPasswordHash(hasher.HashPassword(faculty, facultyPassword));
                 db.Users.Add(faculty);
             }
